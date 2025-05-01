@@ -1,0 +1,11 @@
+
+ <app-info-table
+  *ngIf="dataSource.length"
+  [title]="'appointments'"
+  [columns]="columns"
+  [dataSource]="dataSource"
+  [id_name]= "id_name"
+  [cpt] = "'doctor-update-appointment'"
+  [func_call]="func_call">
+</app-info-table>
+
