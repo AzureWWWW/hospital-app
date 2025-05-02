@@ -3,7 +3,6 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { error } from 'console';
 import { ConfigService } from '../../services/config.service';
 
 @Component({
@@ -14,7 +13,6 @@ import { ConfigService } from '../../services/config.service';
 })
 export class SignUpComponent{
   configService = inject(ConfigService);
-  // http = inject(HttpClient);
   router = inject(Router);
 
   registerForm: any = {
@@ -29,7 +27,6 @@ export class SignUpComponent{
   onSignUp(){
     debugger;
     const formValue = this.registerForm;
-    // this.http.post("http://127.0.0.1:8000/auth/register/", formValue)
     this.configService.register(formValue).subscribe((res:any)=>{
       alert(res.message)
       this.router.navigateByUrl("login")

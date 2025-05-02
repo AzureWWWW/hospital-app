@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 import { Appointment } from '../models/appointment';
 import { Patient } from '../models/patient';
 import { Doctor } from '../models/doctor';
-import { User } from '../models/user';
 import { Admin } from '../models/admin';
 
 
@@ -17,12 +16,16 @@ export class ConfigService {
 
   private config: any;
 
-  token = localStorage.getItem("token");
+  // token = localStorage.getItem("token");
 
   constructor(private http: HttpClient){
     this.config = {
       "base_url": "https://localhost:8432/",
     };
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem('token');
   }
 
   // get the base Url
@@ -61,7 +64,7 @@ export class ConfigService {
     return this.http.put(patient_url, updatedPatient, {
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.token}`
+        Authorization: `Bearer ${this.getToken()}`
       }
     });
   }
