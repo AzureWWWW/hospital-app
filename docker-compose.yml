@@ -1,0 +1,14 @@
+services:
+  angular-frontend:
+    build: ./frontend
+    container_name: angular-frontend
+    ports: 
+      - 4200:4200
+    restart: on-failure
+  
+  fastapi-backend:
+    build: ./backend
+    container_name: fastapi-backend
+    ports:
+      - 8000:8000
+    restart: on-failure
