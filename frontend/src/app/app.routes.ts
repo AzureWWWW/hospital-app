@@ -3,7 +3,6 @@ import { LoginComponent } from './components/login/login.component';
 import { HeaderComponent } from './components/header/header.component';
 import { authGuard } from './guard/auth.guard';
 import { SignUpComponent } from './components/sign-up/sign-up.component';
-import { NewAppointmentComponent } from './components/new-appointment/new-appointment.component';
 
 export const routes: Routes = [
   {
@@ -81,11 +80,6 @@ export const routes: Routes = [
         loadComponent: () =>{
           return import('./my-profile/my-profile.component').then((m)=> m.MyProfileComponent);
         }
-      },
-      {
-        path: 'new_appointment',
-        pathMatch: 'full',
-        component: NewAppointmentComponent
       },
       {
         path: 'admin_new_appointment',
