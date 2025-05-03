@@ -10,37 +10,38 @@ from schemas.user import UserCreate
 from schemas.token import Token
 from core.security import hash_password, create_access_token, decode_token, decode_expired_token 
 from core.config import settings
-from core.utils import authenticate_user, get_current_user, isNameValid, isEmailValid, isPhoneNumberValid 
+from core.utils import authenticate_user, get_current_user, is_name_valid, is_email_valid, is_phone_number_valid 
 from database import get_db
 from datetime import datetime, timedelta
+from core.messages import invalid_token, username_used, email_used, invalid_name, already_logged_out
 
 router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 @router.post("/register/")
-def register(userData: UserCreate, db: Session = Depends(get_db)):
+def register(user_data: UserCreate, db: Session = Depends(get_db)):
     # check if username, email already exists
-    existing_user = db.query(User).filter(User.username == userData.username).first()
+    existing_user = db.query(User).filter(User.username == user_data.username).first()
     if existing_user:
-        raise HTTPException(status_code=400, detail="This Username Has Already Been Used")
-    existed_email = db.query(User).filter(User.email == userData.email).first()
+        raise HTTPException(status_code=400, detail=username_used)
+    existed_email = db.query(User).filter(User.email == user_data.email).first()
     if existed_email:
-        raise HTTPException(status_code=400, detail="This Email Has Already Been Used")
+        raise HTTPException(status_code=400, detail=email_used)
     
-    hashed_password = hash_password(userData.password)
-    if userData.first_name and userData.last_name:
-        name = userData.first_name + ' '+ userData.last_name
-        if isNameValid(name):
-            if  isEmailValid(userData.email) and isPhoneNumberValid(userData.phone_number):
+    hashed_password = hash_password(user_data.password)
+    if user_data.first_name and user_data.last_name:
+        name = user_data.first_name + ' '+ user_data.last_name
+        if is_name_valid(name):
+            if  is_email_valid(user_data.email) and is_phone_number_valid(user_data.phone_number):
                 # create new user object
                 db_user = User(
-                    first_name=userData.first_name,
-                    last_name=userData.last_name,
-                    username=userData.username, 
-                    email=userData.email, 
+                    first_name=user_data.first_name,
+                    last_name=user_data.last_name,
+                    username=user_data.username, 
+                    email=user_data.email, 
                     hashed_password=hashed_password,
-                    phone_number=userData.phone_number,
+                    phone_number=user_data.phone_number,
                     role = "user"
                 )
                         # add new user to database
@@ -50,9 +51,9 @@ def register(userData: UserCreate, db: Session = Depends(get_db)):
                 return {"message": "User Registered Successfully"}
             #exceptions are raised within these functions
         else:
-            raise HTTPException(status_code=400, detail="Invalid Name")
+            raise HTTPException(status_code=400, detail=invalid_name)
 
-    raise HTTPException(status_code=400, detail="Incomplete Name")
+    raise HTTPException(status_code=400, detail=invalid_name)
    
 
     
@@ -91,7 +92,7 @@ def logout(
         return {"msg": "DONE"}
 
 @router.post("/setTokenToExpired/")
-def setTokenToExpired(token: str = Query(...), db: Session = Depends(get_db)):
+def set_token_to_expired(token: str = Query(...), db: Session = Depends(get_db)):
     blacklist_token = db.query(TokenBlacklist).filter(TokenBlacklist.access_token == token).first()
     if blacklist_token:
         return {"msg": "Already Logged Out"}
@@ -109,18 +110,18 @@ def setTokenToExpired(token: str = Query(...), db: Session = Depends(get_db)):
             else:
                 print("COULD NOT DECODE TOKEN\n")
         except:
-            raise HTTPException(status_code=401, detail="Invalid Token")
+            raise HTTPException(status_code=401, detail=invalid_token)
     
     
 def verify_token(token : str, db: Session = Depends(get_db)):
     #search for token in the blacklist_token table
     blacklist_token = db.query(TokenBlacklist).filter(TokenBlacklist.access_token == token).first()
     if blacklist_token:
-        raise HTTPException(status_code=401, detail="User is Already Logged Out")
+        raise HTTPException(status_code=401, detail=already_logged_out)
     else:
         try:
             # check the encoded token is the right one
             return decode_token(token)
         except:
-            raise HTTPException(status_code=401, detail="Invalid Token")
+            raise HTTPException(status_code=401, detail=invalid_token)
         

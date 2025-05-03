@@ -1,12 +1,10 @@
 # Common helper functions
 
-# from datetime import datetime
-# from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
-
+from core.messages import invalid_phone_number, invalid_email, invalid_name , user_not_found, database_error, authentication_error, default_admin_missing,admin_privileges 
 
 from core.security import verify_password, oauth2_scheme
 
@@ -49,8 +47,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     )
     # verify token
     try:
-        if isLoggedOut(token, db):
-            raise HTTPException(status_code=400, detail="Authentication is Needed")
+        if is_logged_out(token, db):
+            raise HTTPException(status_code=400, detail=authentication_error)
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id = payload.get("sub")
         if not user_id:
@@ -73,28 +71,24 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise credentials_exception
     return user
 
-# # get current active user/ valid user
-# async def get_current_active_user(current_user: User = Depends(get_current_user)):
-#     if not current_user.is_valid:
-#         raise HTTPException(status_code=400, detail="Inactive User")
-#     return current_user
+
 
 # Admin role check
 async def get_default_admin(db: Session = Depends(get_db)):
     default_admin = db.query(User).filter(User.user_id == 1).first()
     if not default_admin:
-        raise HTTPException(status_code=403, detail="Default Admin is Missing")
+        raise HTTPException(status_code=403, detail=default_admin_missing)
     return default_admin 
      
 def get_current_admin(current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Administrator Access Required")
+        raise HTTPException(status_code=403, detail=admin_privileges)
     return current_user
 
 
               
               
-def Is_User_Valid(id, table, db):
+def is_user_valid(id, table, db):
     if table == "patient":
         db_search = db.query(Patient).filter(Patient.patient_id==id).first()
         if db_search is None:
@@ -124,39 +118,39 @@ def Is_User_Valid(id, table, db):
             return True
         return False
     else:
-        raise HTTPException(status_code=404, detail="Inexistant Table")
+        raise HTTPException(status_code=404, detail=database_error) #inexistant_table
 
-def isLoggedOut (token: str, db: Session = Depends(get_db)):
+def is_logged_out (token: str, db: Session = Depends(get_db)):
     db_search = db.query(TokenBlacklist).filter(TokenBlacklist.access_token==token).first()
     if db_search is None:
         return False
     return True
     
     
-def getValidUser(user_id: int, db: Session = Depends(get_db)):
+def get_valid_user(user_id: int, db: Session = Depends(get_db)):
     user_db = db.query(User).filter(User.user_id==user_id).all()
     for current_user in user_db:
         if current_user.is_valid == True:
             return current_user
-    raise HTTPException(status_code=404, detail="User Not Found")
+    raise HTTPException(status_code=404, detail=user_not_found)
 
-def isNameValid(name: str):
+def is_name_valid(name: str):
     
     if len(name.split(' ')) == 2 :
         if name.split(' ')[0].isalpha() and name.split(' ')[1].isalpha() :
             return True
-    raise HTTPException(status_code=400, detail="Invalid Name")
+    raise HTTPException(status_code=400, detail=invalid_name )
 
-def isEmailValid(email: str):
+def is_email_valid(email: str):
     if re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email):
         return True
-    raise HTTPException(status_code=400, detail="Invalid Email")
+    raise HTTPException(status_code=400, detail=invalid_email)
 
-def isPhoneNumberValid(number: str):
+def is_phone_number_valid(number: str):
     number = number.replace(" ", "")
     if len(number)<10 or len(number)>= 15:
-        raise HTTPException(status_code=400, detail="Invalid Phone Number")
+        raise HTTPException(status_code=400, detail=invalid_phone_number)
     else:
         if re.match(r'^\+\d{1,3}\d{8,14}$',number):
             return True
-    raise HTTPException(status_code=400, detail="Invalid Phone Number")
+    raise HTTPException(status_code=400, detail=invalid_phone_number)

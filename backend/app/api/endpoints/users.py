@@ -10,8 +10,9 @@ from models.doctor import Doctor
 from models.admin import Admin
 from schemas.user import UserUpdate 
 from .appointments import deactivate_appointment, get_user_appointments_by_user_id
-from core.utils import get_current_admin, getValidUser, isEmailValid, isPhoneNumberValid, get_current_user, get_default_admin
+from core.utils import get_current_admin, get_valid_user, is_email_valid, is_phone_number_valid, get_current_user, get_default_admin
 from database import SessionLocal
+from core.messages import invalid_doctor_specialty, user_not_found , default_admin_update , general_privileges_update 
 
 router = APIRouter()
 
@@ -53,8 +54,8 @@ def deactivate_user(
     db: Session = Depends(get_db),
     current_admin: User = Depends(get_current_admin)):
     if user_id == 1:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot Deactivate Default Admin User")
-    user =  getValidUser(user_id, db)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail= default_admin_update )
+    user =  get_valid_user(user_id, db)
     
     # set user_status to invalid and status_expiry date: 
     if user.role == 'patient':
@@ -96,20 +97,20 @@ def deactivate_user(
 
 
 @router.get("/getUserRole/")
-def getUserRole(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_user_role(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = db.query(User).filter(User.user_id == current_user.user_id).first()
     if not user:
 
-        raise HTTPException(status_code=404, detail="User Not Found")
+        raise HTTPException(status_code=404, detail=user_not_found)
     else:
 
         return user.role
     
 @router.get("/getUserInfo/")
-def getUserInfo( db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_user_info( db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = db.query(User).filter(User.user_id == current_user.user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User Not Found")
+        raise HTTPException(status_code=404, detail=user_not_found)
     else:
         info ={"user_id": user.user_id,
                 "first_name":user.first_name,
@@ -121,13 +122,14 @@ def getUserInfo( db: Session = Depends(get_db), current_user: User = Depends(get
         if user.role == 'doctor':
             doctor = db.query(Doctor).filter(Doctor.user_id == current_user.user_id, Doctor.is_doctor == 1).first()
             if doctor:
+                info['doctor_id'] = doctor.doctor_id
                 info['doctor_specialty'] = doctor.doctor_specialty
     return JSONResponse(content=info)
 
 
 
 @router.put("/updateMyProfile/")
-def updateMyProfile(
+def update_my_profile(
     user_update: UserUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -136,15 +138,15 @@ def updateMyProfile(
     user = db.query(User).filter(User.user_id == current_user.user_id, 
                                     User.is_valid == 1).first()
     if not user:
-        raise HTTPException(status_code=403, detail="You Can't Update This User Info")
+        raise HTTPException(status_code=403, detail=general_privileges_update)
     
     if current_user.role == "doctor" and user_update.doctor_specialty:
         doctor = db.query(Doctor).filter(Doctor.user_id == current_user.user_id, 
                                     Doctor.is_doctor == 1).first()
         if not doctor:
-            raise HTTPException(status_code=403, detail="You Can't Update This User Info")
+            raise HTTPException(status_code=403, detail=general_privileges_update)
         if user_update.doctor_specialty.upper() not in allowed_specialties:
-            raise HTTPException(status_code=404, detail="Invalid Doctor Specialty")
+            raise HTTPException(status_code=404, detail=invalid_doctor_specialty)
         doctor.doctor_specialty = user_update.doctor_specialty
         db.commit()
         db.refresh(doctor)
@@ -154,9 +156,9 @@ def updateMyProfile(
             current_user.first_name = user_update.first_name
     if user_update.last_name and user_update.last_name.isalpha():
             current_user.last_name = user_update.last_name
-    if user_update.email and isEmailValid(user_update.email):
+    if user_update.email and is_email_valid(user_update.email):
             current_user.email = user_update.email
-    if user_update.phone_number and isPhoneNumberValid(user_update.phone_number):
+    if user_update.phone_number and is_phone_number_valid(user_update.phone_number):
             current_user.phone_number = user_update.phone_number
     if user_update.username:
         current_user.username = user_update.username

@@ -86,6 +86,27 @@ export const routes: Routes = [
         path: 'new_appointment',
         pathMatch: 'full',
         component: NewAppointmentComponent
+      },
+      {
+        path: 'admin_new_appointment',
+        pathMatch: 'full',
+        loadComponent: () =>{
+          return import('./components/view_admin/admin-new-appointment/admin-new-appointment.component').then((m)=> m.AdminNewAppointmentComponent);
+        }
+      },
+      {
+        path: 'patient_new_appointment',
+        pathMatch: 'full',
+        loadComponent: () =>{
+          return import('./components/view_patient/patient-new-appointment/patient-new-appointment.component').then((m)=> m.PatientNewAppointmentComponent);
+        }
+      },
+      {
+        path: 'doctor_new_appointment',
+        pathMatch: 'full',
+        loadComponent: () =>{
+          return import('./components/view_doctor/doctor-new-appointment/doctor-new-appointment.component').then((m)=> m.DoctorNewAppointmentComponent);
+        }
       }
     ]
   },

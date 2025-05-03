@@ -7,6 +7,7 @@ from jose import jwt
 from jose import JWTError
 from core.config import settings
 import bcrypt
+from core.messages import token_decode
 
 
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
@@ -43,7 +44,7 @@ def decode_token (encoded_token:str):
         decoded = jwt.decode(encoded_token, JWT_SECRET_KEY, algorithms=[ALGORITHM]) 
         return decoded
     except:
-        raise HTTPException(status_code=401, detail="Could Not Decode Token")
+        raise HTTPException(status_code=401, detail=token_decode)
     
 
 def decode_expired_token (encoded_token:str):
@@ -51,4 +52,4 @@ def decode_expired_token (encoded_token:str):
         decoded = jwt.decode(encoded_token, JWT_SECRET_KEY, algorithms=[ALGORITHM], options={"verify_exp": False}) 
         return decoded
     except:
-        raise HTTPException(status_code=401, detail="Could Not Decode Token")
+        raise HTTPException(status_code=401, detail=token_decode)

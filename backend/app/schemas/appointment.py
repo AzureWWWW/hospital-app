@@ -19,6 +19,7 @@ class UserAppointmentUpdate(BaseModel):
     status: str
 
 class getAvailableAppointment(BaseModel):
+    doctor_id: int
     specialty: str
     date: date
     
@@ -27,7 +28,7 @@ class getdAvailableAppointmentByAppointmentId(BaseModel):
     date: date
     
 class patientAddAppointment(BaseModel):
-    doctor_name: str
+    patient_id: int 
     date: date
     doctor_id: int
     time_slot: int

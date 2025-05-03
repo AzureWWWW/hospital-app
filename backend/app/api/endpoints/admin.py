@@ -1,6 +1,6 @@
 #includes routing logic
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from database import get_db
@@ -8,17 +8,17 @@ from models.user import User
 from models.patient import Patient
 from models.doctor import Doctor
 from models.admin import Admin
-from models.appointment import Appointment
 from schemas.admin import DefaultAdminUpdateAdmin, RoleUpdate
 from schemas.user import UserUpdate
-from core.utils import get_current_admin, getValidUser
+from core.utils import get_current_admin, get_valid_user
+from core.messages import default_admin_update, default_admin_privileges, admin_not_found, user_not_found, invalid_role, default_admin_privileges, user_role_change, status_expiry_change
 
 router = APIRouter()
 
 
 
 def create_patient(patient_user_id: int, db: Session = Depends(get_db)):
-    db_user =  getValidUser(patient_user_id, db)
+    db_user = get_valid_user(patient_user_id, db)
     db_patient = Patient(user_id=patient_user_id)
     db.add(db_patient)
     db_user.role = "patient"
@@ -28,7 +28,7 @@ def create_patient(patient_user_id: int, db: Session = Depends(get_db)):
     return db_user
 
 def create_doctor(doctor_user_id: int, db: Session = Depends(get_db)):
-    db_user =  getValidUser(doctor_user_id, db)
+    db_user = get_valid_user(doctor_user_id, db)
     db_doctor = Doctor(user_id=doctor_user_id)
     db.add(db_doctor)
     db_user.role = "doctor"
@@ -38,7 +38,7 @@ def create_doctor(doctor_user_id: int, db: Session = Depends(get_db)):
     return db_user
 
 def create_admin(admin_user_id: int, db: Session = Depends(get_db)):
-    db_user =  getValidUser(admin_user_id, db)
+    db_user =  get_valid_user(admin_user_id, db)
     db_admin = Admin(user_id=admin_user_id)
     db.add(db_admin)
     db_user.role = "admin"
@@ -48,7 +48,7 @@ def create_admin(admin_user_id: int, db: Session = Depends(get_db)):
     return db_user
 
 @router.get("/getNonAssignedUsers/")
-def getNonAssignedUsers( db: Session = Depends(get_db), current_user: User = Depends(get_current_admin)):
+def get_non_assigned_users( db: Session = Depends(get_db), current_user: User = Depends(get_current_admin)):
     user_data = db.query(User).filter(User.is_valid == 1, User.role == "user").all()
     result = []
     if not user_data:
@@ -72,17 +72,15 @@ def update_user_role(
     db: Session = Depends(get_db), 
     current_admin: User = Depends(get_current_admin)):
     if user_id == 1:
-        raise HTTPException(status_code=404, detail="Error: This is a Default Admin")
+        raise HTTPException(status_code=404, detail=default_admin_update)
     roles = ['admin', 'doctor', 'patient', 'user']
     role_update.new_role = role_update.new_role.lower()
     if role_update.new_role not in roles:
-        raise HTTPException(status_code=404, detail="Invalid Role")
+        raise HTTPException(status_code=404, detail = invalid_role)
     
-    db_user =  getValidUser(user_id, db)
-    if db_user.role != 'user':
-        raise HTTPException(status_code=404, detail=f"You Can't Change To Another Role, User is a {db_user.role}")
-    if db_user.role == role_update.new_role:
-        raise HTTPException(status_code=404, detail=f"User is Already {db_user.role}")
+    db_user =  get_valid_user(user_id, db)
+    if db_user.role != 'user' and db_user.role != role_update.new_role:
+        raise HTTPException(status_code=404, detail= user_role_change)
     
     #set the status = false and status_expiry date in the corresponding table 
     if db_user.role == "patient":
@@ -125,14 +123,14 @@ def update_user_role(
 def get_admin_name_by_id(admin_id: int, db: Session = Depends(get_db)):
     admin = db.query(Admin).filter(Admin.admin_id==admin_id).first()
     if not admin:
-        raise HTTPException(status_code=404, detail="Admin Not Found")
+        raise HTTPException(status_code=404, detail= admin_not_found)
     user = db.query(User).filter(User.user_id == admin.user_id).first() 
     if not user:
-        raise HTTPException(status_code=404, detail="Admin is Not a User")
+        raise HTTPException(status_code=404, detail= user_not_found)
     return  f"{user.first_name} {user.last_name}"
 
 @router.get("/isDefaultAdmin/")
-def isDefaultAdmin(current_admin: User = Depends(get_current_admin)):
+def is_default_admin(current_admin: User = Depends(get_current_admin)):
     if current_admin.user_id ==1:
         return True
     return False
@@ -142,13 +140,13 @@ def isDefaultAdmin(current_admin: User = Depends(get_current_admin)):
 @router.put("/update_admin_status_expiry/")
 def update_doctor_status_expiry(admin_id: int, admin_info: DefaultAdminUpdateAdmin, db: Session = Depends(get_db), current_admin: User = Depends(get_current_admin)):
     if admin_id ==1:
-        raise HTTPException(status_code=404, detail="Default Admin Can't be Updated")
+        raise HTTPException(status_code=404, detail= default_admin_update)
     admin = db.query(Admin).filter(Admin.admin_id == admin_id).first()
     if not admin:
-        raise HTTPException(status_code=404, detail="Admin Not Found")
+        raise HTTPException(status_code=404, detail=admin_not_found)
     
     if admin.status_expiry:
-        raise HTTPException(status_code=404, detail="Status Expiry Can't be Changed")
+        raise HTTPException(status_code=404, detail=status_expiry_change)
     
     if admin_info.status_expiry <=  datetime.now(timezone.utc):
         admin.is_admin = 0
@@ -159,7 +157,7 @@ def update_doctor_status_expiry(admin_id: int, admin_info: DefaultAdminUpdateAdm
     
 
 @router.get("/getAllAdmins/")
-def getAllAdmins(db: Session = Depends(get_db), current_admin: User = Depends(get_current_admin)):
+def get_all_admins(db: Session = Depends(get_db), current_admin: User = Depends(get_current_admin)):
     if current_admin.user_id == 1:    
         info = []
         admin_db = db.query(Admin).all()
@@ -167,7 +165,7 @@ def getAllAdmins(db: Session = Depends(get_db), current_admin: User = Depends(ge
             admin_name = get_admin_name_by_id(admin.admin_id,db)
             user = db.query(User).filter(User.user_id == admin.user_id).first() 
             if not user:
-                raise HTTPException(status_code=404, detail="User Not Found")
+                raise HTTPException(status_code=404, detail=user_not_found)
             app_data = {"admin_id": admin.admin_id,
                         "admin_name":admin_name,
                         "username":user.username,
@@ -176,4 +174,4 @@ def getAllAdmins(db: Session = Depends(get_db), current_admin: User = Depends(ge
                         "phone_number": user.phone_number}
             info.append(app_data)
         return info
-    raise HTTPException(status_code=404, detail=" Default Administrator Privileges are Needed")
+    raise HTTPException(status_code=404, detail=default_admin_privileges)
