@@ -12,4 +12,4 @@ class RoleUpdate(BaseModel):
     new_role: str
     
 class DefaultAdminUpdateAdmin(BaseModel):
-    status_expiry : datetime = None
+    status_expiry : datetime | None = None

@@ -71,7 +71,7 @@ def get_all_doctors(db: Session = Depends(get_db), current_user: User = Depends(
     raise HTTPException(status_code=404, detail=admin_privileges)
 
 @router.get("/getAllSpecialty/")
-def get_all_Specialty(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_all_specialty(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     specialty_list = db.query(Doctor.doctor_specialty).filter(
         or_(
             Doctor.status_expiry == None,

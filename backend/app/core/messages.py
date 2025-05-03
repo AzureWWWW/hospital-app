@@ -22,6 +22,7 @@ invalid_phone_number = "Invalid Phone Number"
 invalid_token = "Invalid Token"
 invalid_doctor_specialty = "Invalid Doctor Specialty"
 invalid_status = "Invalid Appointment Status"
+expired_token = "Token has expired"
 
 email_used= "This Email is Already in Use"
 username_used= "This Username is Already in Use"

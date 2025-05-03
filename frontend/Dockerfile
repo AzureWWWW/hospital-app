@@ -1,5 +1,5 @@
 # === Frontend (Angular) Build ===
-FROM node:22-slim as build
+FROM node:22-slim AS build
 WORKDIR /HospitalApp/frontend
 COPY . .
 

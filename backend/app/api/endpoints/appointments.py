@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from models.doctor import Doctor
 from database import get_db
 from sqlalchemy.orm import Session
-from schemas.appointment import  AdminAppointmentUpdate, UserAppointmentUpdate, getAvailableAppointment, patientAddAppointment
+from schemas.appointment import  admin_appointment_update, user_appointment_update, get_available_appointment, create_new_appointment
 from models.appointment import Appointment
 from models.user import User
 from .patients import get_patient_name_by_id, get_patient_id_by_user_id, is_patient_valid, get_patient_id
@@ -72,7 +72,7 @@ def get_patient_appointments(db: Session = Depends(get_db), current_user: User =
 
 
 @router.put("/adminUpdateAppointment/{id}")
-def admin_update_appointment(id:int, data: AdminAppointmentUpdate,
+def admin_update_appointment(id:int, data: admin_appointment_update,
                              db: Session = Depends(get_db),
                              current_admin: User = Depends(get_current_admin)):
     appointment = db.query(Appointment).filter(Appointment.appointment_id == id).first()
@@ -121,7 +121,7 @@ def admin_update_appointment(id:int, data: AdminAppointmentUpdate,
 
 
 @router.put("/userUpdateAppointment/{id}")
-def user_update_appointment(id:int, data: UserAppointmentUpdate,
+def user_update_appointment(id:int, data: user_appointment_update,
                              db: Session = Depends(get_db),
                              current_user: User = Depends(get_current_user)
                              ):
@@ -196,11 +196,11 @@ def get_user_appointments_by_user_id(user_id: int, db: Session = Depends(get_db)
     if not user_db:
         raise HTTPException(status_code=404, detail=user_not_found)
     if user_db.role == "patient":
-        id = get_patient_id_by_user_id(user_id,db)
-        appointments = db.query(Appointment).filter(Appointment.patient_id == id).all()
+        patient_id = get_patient_id_by_user_id(user_id,db)
+        appointments = db.query(Appointment).filter(Appointment.patient_id == patient_id).all()
     elif user_db.role == "doctor":
-        id = get_doctor_id_by_user_id(user_id,db)
-        appointments = db.query(Appointment).filter(Appointment.doctor_id == id).all()
+        doctor_id = get_doctor_id_by_user_id(user_id,db)
+        appointments = db.query(Appointment).filter(Appointment.doctor_id == doctor_id).all()
     return appointments
 
 
@@ -279,13 +279,13 @@ def get_available_appointment_by_appointment_id(
 
 
 @router.post("/getAvailableAppointment")
-def get_available_appointment(checkAvailableAppointment: getAvailableAppointment , db: Session = Depends(get_db)):
+def get_available_appointment(check_available_appointment: get_available_appointment , db: Session = Depends(get_db)):
     details = []
 
-    if checkAvailableAppointment.doctor_id == 0:
-        doctors_db = db.query(Doctor).filter(Doctor.doctor_specialty==checkAvailableAppointment.specialty, Doctor.is_doctor == 1).all()
+    if check_available_appointment.doctor_id == 0:
+        doctors_db = db.query(Doctor).filter(Doctor.doctor_specialty==check_available_appointment.specialty, Doctor.is_doctor == 1).all()
     else:
-        doctors_db = db.query(Doctor).filter(Doctor.doctor_id==checkAvailableAppointment.doctor_id).all()
+        doctors_db = db.query(Doctor).filter(Doctor.doctor_id==check_available_appointment.doctor_id).all()
 
     for doctor in doctors_db:
         doctor_name = get_doctor_name_by_id(doctor.doctor_id,db)
@@ -298,8 +298,8 @@ def get_available_appointment(checkAvailableAppointment: getAvailableAppointment
         
         # query appointment based on doctor_id and the date 
         appointments_db = db.query(Appointment).filter(Appointment.doctor_id == doctor.doctor_id,
-                                                    Appointment.date_time >= datetime.combine(checkAvailableAppointment.date, datetime.min.time()),  # Convert date to datetime
-                                                    Appointment.date_time < datetime.combine(checkAvailableAppointment.date, datetime.max.time())).all()
+                                                    Appointment.date_time >= datetime.combine(check_available_appointment.date, datetime.min.time()),  # Convert date to datetime
+                                                    Appointment.date_time < datetime.combine(check_available_appointment.date, datetime.max.time())).all()
     
         if not appointments_db:     # if there is no appointment on that date, so 3 slots are vacant
             details.append(app_data)
@@ -312,8 +312,8 @@ def get_available_appointment(checkAvailableAppointment: getAvailableAppointment
         details.append(app_data)
 
     info = {
-         "specilaty": checkAvailableAppointment.specialty,
-         "date": checkAvailableAppointment.date,
+         "specilaty": check_available_appointment.specialty,
+         "date": check_available_appointment.date,
          "details": details
     }
     return info
@@ -331,7 +331,7 @@ def get_doctor_id_by_username(username:str, db: Session = Depends(get_db)):
     
     
 @router.post("/PatientCreateAppointment/")
-def create_appointment(user_data: patientAddAppointment, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def create_appointment(user_data: create_new_appointment, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role == "admin":
         patient_id = user_data.patient_id
     elif current_user.role == "patient":

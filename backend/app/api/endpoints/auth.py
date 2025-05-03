@@ -13,7 +13,7 @@ from core.config import settings
 from core.utils import authenticate_user, get_current_user, is_name_valid, is_email_valid, is_phone_number_valid 
 from database import get_db
 from datetime import datetime, timedelta
-from core.messages import invalid_token, username_used, email_used, invalid_name, already_logged_out
+from core.messages import username_used, email_used, invalid_name, already_logged_out
 
 router = APIRouter()
 
@@ -96,32 +96,26 @@ def set_token_to_expired(token: str = Query(...), db: Session = Depends(get_db))
     blacklist_token = db.query(TokenBlacklist).filter(TokenBlacklist.access_token == token).first()
     if blacklist_token:
         return {"msg": "Already Logged Out"}
+
+    # check the encoded token is the right one
+    decoded_token = decode_expired_token(token)
+    if decoded_token:
+        # Blacklist token 
+        blacklist_db = TokenBlacklist(access_token =token, expired_at = datetime.utcnow() )
+        db.add(blacklist_db)
+        db.commit()
+        db.refresh(blacklist_db)
+        return {"msg": "DONE"}
     else:
-        try:
-            # check the encoded token is the right one
-            decoded_token = decode_expired_token(token)
-            if decoded_token:
-                # Blacklist token 
-                blacklist_db = TokenBlacklist(access_token =token, expired_at = datetime.utcnow() )
-                db.add(blacklist_db)
-                db.commit()
-                db.refresh(blacklist_db)
-                return {"msg": "DONE"}
-            else:
-                print("COULD NOT DECODE TOKEN\n")
-        except:
-            raise HTTPException(status_code=401, detail=invalid_token)
-    
+        return {"msg": "COULD NOT DECODE TOKEN"}
+        
+        
     
 def verify_token(token : str, db: Session = Depends(get_db)):
     #search for token in the blacklist_token table
     blacklist_token = db.query(TokenBlacklist).filter(TokenBlacklist.access_token == token).first()
     if blacklist_token:
         raise HTTPException(status_code=401, detail=already_logged_out)
-    else:
-        try:
-            # check the encoded token is the right one
-            return decode_token(token)
-        except:
-            raise HTTPException(status_code=401, detail=invalid_token)
+
+    return decode_token(token)
         

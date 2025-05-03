@@ -3,11 +3,10 @@
 from datetime import datetime, timedelta, timezone
 from http.client import HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt
-from jose import JWTError
+from jose import jwt, JWTError, ExpiredSignatureError
 from core.config import settings
 import bcrypt
-from core.messages import token_decode
+from core.messages import expired_token, invalid_token
 
 
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
@@ -43,13 +42,22 @@ def decode_token (encoded_token:str):
     try: 
         decoded = jwt.decode(encoded_token, JWT_SECRET_KEY, algorithms=[ALGORITHM]) 
         return decoded
-    except:
-        raise HTTPException(status_code=401, detail=token_decode)
     
+    except ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail=expired_token)  # Handle expired token
+    except JWTError:
+        raise HTTPException(status_code=401, detail=invalid_token)  # Handle invalid token
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")  # Catch all other exceptions
+
 
 def decode_expired_token (encoded_token:str):
     try: 
         decoded = jwt.decode(encoded_token, JWT_SECRET_KEY, algorithms=[ALGORITHM], options={"verify_exp": False}) 
         return decoded
-    except:
-        raise HTTPException(status_code=401, detail=token_decode)
+    except ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail=expired_token)  # Handle expired token
+    except JWTError:
+        raise HTTPException(status_code=401, detail=invalid_token)  # Handle invalid token
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")  # Catch all other exceptions

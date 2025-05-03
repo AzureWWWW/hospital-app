@@ -2,32 +2,27 @@ from pydantic import BaseModel
 from datetime import datetime, date
 
 # pydantic model for appointment
-class AppointmentCreate(BaseModel):
-    patient_id : int
-    doctor_id : int
-    description : str
-    date_time : datetime
-    
-class AdminAppointmentUpdate(BaseModel):
+
+class admin_appointment_update(BaseModel):
     description : str
     date_time : datetime
     status : str
 
-class UserAppointmentUpdate(BaseModel):
+class user_appointment_update(BaseModel):
     description : str
     date_time: datetime
     status: str
 
-class getAvailableAppointment(BaseModel):
+class get_available_appointment(BaseModel):
     doctor_id: int
     specialty: str
     date: date
     
-class getdAvailableAppointmentByAppointmentId(BaseModel):
+class get_available_appointment_by_appointmentId(BaseModel):
     appointment_id: int
     date: date
     
-class patientAddAppointment(BaseModel):
+class create_new_appointment(BaseModel):
     patient_id: int 
     date: date
     doctor_id: int
