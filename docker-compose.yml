@@ -10,5 +10,5 @@ services:
     build: ./backend
     container_name: fastapi-backend
     ports:
-      - 8000:8000
+      - 8432:8432
     restart: on-failure
