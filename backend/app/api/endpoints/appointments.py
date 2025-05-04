@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from schemas.appointment import  admin_appointment_update, user_appointment_update, get_available_appointment, create_new_appointment
 from models.appointment import Appointment
 from models.user import User
+from models.patient import Patient
 from .patients import get_patient_name_by_id, get_patient_id_by_user_id, is_patient_valid, get_patient_id
 from .doctors import get_doctor_name_by_id,  get_doctor_id_by_user_id, is_doctor_valid, get_doctor_id, get_doctor_specialty_by_id
 from core.utils import is_user_valid, get_current_user, get_current_admin
@@ -312,7 +313,7 @@ def get_available_appointment(check_available_appointment: get_available_appoint
         details.append(app_data)
 
     info = {
-         "specilaty": check_available_appointment.specialty,
+         "specialty": check_available_appointment.specialty,
          "date": check_available_appointment.date,
          "details": details
     }
@@ -330,10 +331,14 @@ def get_doctor_id_by_username(username:str, db: Session = Depends(get_db)):
     return doctor.doctor_id
     
     
-@router.post("/PatientCreateAppointment/")
+@router.post("/CreateNewAppointment/")
 def create_appointment(user_data: create_new_appointment, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role == "admin":
         patient_id = user_data.patient_id
+        # check if patient is still valid
+        patient_in_db = db.query(Patient).filter(Patient.patient_id==patient_id).first()
+        if patient_in_db.is_patient == 0:
+            return {"message": "Patient not found"}
     elif current_user.role == "patient":
         patient_id = get_patient_id_by_user_id(current_user.user_id,db)
     elif current_user.role == "doctor": # if doctor want to book appointment as a patient

@@ -81,7 +81,7 @@ export class DoctorNewAppointmentComponent {
   onCreate(){
     if (this.createForm.doctor_name != "", this.createForm.time_slot != 0){
 
-      this.configService.patientCreateAppointment(this.createForm).subscribe((res: any) => {
+      this.configService.CreateNewAppointment(this.createForm).subscribe((res: any) => {
         alert(res.message)
       this.getAvailableAppointment()
       this.router.navigateByUrl("/home");

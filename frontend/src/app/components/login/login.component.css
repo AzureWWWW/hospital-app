@@ -77,7 +77,7 @@
     border-radius: 10px;
     transform: translate(-1%);
     background: linear-gradient(to right, #6bc3f6, #ff4b2b);
-    color: #333333;
+    color: #ffffff;
     cursor: pointer;
     transition: all 0.4s;
 }

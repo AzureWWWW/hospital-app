@@ -82,7 +82,8 @@ def get_all_patients(db: Session = Depends(get_db),current_user: User = Depends(
                         "username":user.username,
                         "status_expiry": patient.status_expiry,
                         "email":user.email,
-                        "phone_number": user.phone_number}
+                        "phone_number": user.phone_number,
+                        "is_patient": patient.is_patient}
             info.append(app_data)
         return info
     elif current_user.role == "doctor":

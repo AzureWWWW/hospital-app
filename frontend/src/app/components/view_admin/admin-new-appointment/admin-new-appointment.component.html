@@ -65,7 +65,10 @@
                         <select name="patient_id" [(ngModel)]="createForm.patient_id">
                             <option value="" disabled >-Select a patient-</option>
                             @for (patient of patientsData; track $index){
-                                <option [value]="patient.patient_id" >{{patient.patient_name}}</option>
+                                @if (patient.is_patient == 1){
+                                    <option [value]="patient.patient_id" >{{patient.patient_name}}</option>
+                                }
+                                <!-- <option [value]="patient.patient_id" >{{patient.patient_name}}</option> -->
                             }
                         </select>
                     </span>

@@ -142,8 +142,8 @@ export class ConfigService {
     return this.http.post(user_url,{});
   }
 
-  patientCreateAppointment(form: any):Observable<any>{
-    const user_url = this.config.base_url + "appointments/PatientCreateAppointment/";
+  CreateNewAppointment(form: any):Observable<any>{
+    const user_url = this.config.base_url + "appointments/CreateNewAppointment/";
     return this.http.post(user_url,form);
   }
   getAvailableAppointment(form: any):Observable<any>{
